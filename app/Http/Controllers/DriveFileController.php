@@ -17,7 +17,9 @@ class DriveFileController extends Controller
      */
     public function __invoke(Request $request)
     {
+        logger($request->all());
         $request->validate([
+            'access_token' => 'required',
             'files' => 'required|array',
             'files.*.id' => 'required|string',
             'files.*.name' => 'required|string',
@@ -29,7 +31,7 @@ class DriveFileController extends Controller
             $fileName = $fileData['name'];
             $mimeType = $fileData['mimeType'];
 
-            $fileContent = $this->downloadGoogleFile($fileId);
+            $fileContent = $this->downloadGoogleFile($fileId, $request->access_token);
 
             if ($fileContent !== false) {
                 $localFilePath = "drive-files/{$fileName}";
@@ -57,23 +59,49 @@ class DriveFileController extends Controller
     /**
      * Download file from Google Drive using the Drive API client.
      */
-    protected function downloadGoogleFile(string $fileId)
+    protected function downloadGoogleFile(string $fileId, string $accessToken)
     {
         try {
             $client = new Client();
             $client->setDeveloperKey(config('services.google.api_key'));
+            $client->setAccessToken($accessToken);
             $client->addScope(Drive::DRIVE);
 
             $driveService = new Drive($client);
 
             /** @var \Psr\Http\Message\ResponseInterface $response */
             $response = $driveService->files->get($fileId, [
-                'alt' => 'media'
+                'alt' => 'media',
+                'supportsAllDrives' => true
             ]);
 
             return $response->getBody()->getContents();
         } catch (Throwable $th) {
-            Log::error($th->getMessage());
+            Log::error("Error fetching file ID {$fileId}: " . $th->getMessage());
+            return false;
+        }
+    }
+
+    protected function exportGoogleWorkspaceDocument(string $fileType, string $fileId, string $accessToken)
+    {
+        try {
+            $client = new Client();
+            $client->setDeveloperKey(config('services.google.api_key'));
+            $client->setAccessToken($accessToken);
+            $client->addScope(Drive::DRIVE);
+
+            $driveService = new Drive($client);
+
+            /** @var \Psr\Http\Message\ResponseInterface $response */
+            $response = $driveService->files->export($fileId, $fileType, array(
+                'alt' => 'media'
+            ));
+
+            $content = $response->getBody()->getContents();
+
+            return $content;
+        } catch (\Throwable $th) {
+            Log::error("Error fetching file ID {$fileId}: " . $th->getMessage());
             return false;
         }
     }

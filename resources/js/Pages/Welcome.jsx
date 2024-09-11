@@ -5,15 +5,17 @@ import useDrivePicker from 'react-google-drive-picker'
 export default function Welcome() {
     const [openPicker, authResponse] = useDrivePicker()
     const [selectedFiles, setSelectedFiles] = useState([])
+    const [access_token, setAccessToken] = useState(null)
 
-    const { data, setData, post, processing, errors, wasSuccessful, clearErrors } = useForm({
-        files: [],
+    const { data, setData, post, processing, errors, wasSuccessful, transform } = useForm({
+        files: []
     })
 
     const handleAuthResponse = () => {
         if (authResponse && authResponse.access_token) {
             localStorage.setItem('google_access_token', authResponse.access_token)
             localStorage.setItem('google_token_expiry', Date.now() + authResponse.expires_in * 1000)
+            setAccessToken(authResponse.access_token);
         } else {
             console.error('Authentication failed or not yet provided')
         }
@@ -28,6 +30,7 @@ export default function Welcome() {
         const expiry = localStorage.getItem('google_token_expiry')
 
         if (token && expiry && Date.now() < Number(expiry)) {
+            setAccessToken(token);
             return token
         } else {
             localStorage.removeItem('google_access_token')
@@ -42,12 +45,16 @@ export default function Welcome() {
         openPicker({
             clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID,
             developerKey: import.meta.env.VITE_GOOGLE_API_KEY,
-            viewId: "DOCS",
+            viewId: "DOCS_IMAGES_AND_VIDEOS",
             token: token,
+            setIncludeFolders: true,
             showUploadView: true,
             showUploadFolders: true,
-            supportDrives: true,
+            supportDrives: false,
             multiselect: true,
+            customScopes: [
+                'https://www.googleapis.com/auth/drive',
+            ],
             callbackFunction: (data) => {
                 if (data.action === 'picked') {
                     setSelectedFiles(data.docs)
@@ -59,7 +66,12 @@ export default function Welcome() {
 
     const handleSubmit = (e) => {
         e.preventDefault()
-        clearErrors()
+
+        transform((data) => ({
+            ...data,
+            access_token: access_token,
+        }))
+
         post('/upload', {
             ...data,
             onSuccess: () => {
