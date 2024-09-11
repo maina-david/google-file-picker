@@ -17,7 +17,6 @@ class DriveFileController extends Controller
      */
     public function __invoke(Request $request)
     {
-        logger($request->all());
         $request->validate([
             'access_token' => 'required',
             'files' => 'required|array',
