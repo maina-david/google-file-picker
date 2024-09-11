@@ -130,12 +130,6 @@ export default function Welcome() {
                             </button>
                         )}
 
-                        {processing && (
-                            <progress value={processing.percentage} max="100" className="mt-4 w-full">
-                                {processing.percentage}%
-                            </progress>
-                        )}
-
                         {Object.keys(errors).length > 0 && (
                             <div className="mt-4 text-red-500">
                                 {Object.values(errors).map((error, index) => (
