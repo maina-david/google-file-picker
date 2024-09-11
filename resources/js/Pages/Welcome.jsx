@@ -12,7 +12,6 @@ export default function Welcome() {
 
     const handleAuthResponse = () => {
         if (authResponse && authResponse.access_token) {
-            console.log('Authentication successful:', authResponse)
             localStorage.setItem('google_access_token', authResponse.access_token)
             localStorage.setItem('google_token_expiry', Date.now() + authResponse.expires_in * 1000)
         } else {
@@ -86,10 +85,9 @@ export default function Welcome() {
                     </button>
 
                     {selectedFiles.length > 0 && (
-                        <div className="w-full text-left mb-6">
-                            <h2 className="text-lg font-medium mb-2">Selected Files:</h2>
+                        <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                             {selectedFiles.map((file, index) => (
-                                <div key={index} className="p-4 mb-4 border rounded-lg bg-gray-50 dark:bg-gray-700">
+                                <div key={index} className="p-4 border rounded-lg bg-gray-50 dark:bg-gray-700">
                                     <p className="font-semibold">Name: {file.name}</p>
                                     <p className="text-sm text-gray-500">Type: {file.mimeType}</p>
                                     <a
